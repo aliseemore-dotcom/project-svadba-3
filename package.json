@@ -4,7 +4,7 @@
   "version": "0.1.0",
   "scripts": {
     "dev": "vite --configLoader bundle",
-    "build": "tsc --noEmit && vite build --configLoader bundle",
+    "build": "tsc --noEmit && vite build --configLoader bundle && node scripts/postbuild.mjs",
     "preview": "vite preview --configLoader bundle",
     "typecheck": "tsc --noEmit",
     "test": "vitest run"

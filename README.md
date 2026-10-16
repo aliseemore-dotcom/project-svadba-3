@@ -78,3 +78,7 @@ npm run build      # проверка типов и сборка в dist/
 10. Формат и сроки передачи фотографий с вечера.
 11. Файл логотипа и фотографии для оформления.
 12. Нужен ли строгий лимит частоты (общее хранилище).
+
+## GitHub Pages
+Сайт публикуется на `la-fete.ru` через GitHub Pages, заявки принимает Google Apps Script. Подробно: [docs/GITHUB_PAGES.md](docs/GITHUB_PAGES.md).
+В сборке адрес приёма задаётся `VITE_LEAD_ENDPOINT` (в Actions это переменная `LEAD_ENDPOINT`); без него форма использует `/api/lead` (Vercel).

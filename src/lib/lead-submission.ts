@@ -17,23 +17,44 @@ export function readUtm(search: string): Record<string, string> {
   return out
 }
 
+/**
+ * Адрес приёма заявок. По умолчанию свой /api/lead (Vercel, dev-сервер).
+ * Для GitHub Pages задаётся при сборке: VITE_LEAD_ENDPOINT=https://script.google.com/macros/s/.../exec
+ */
+export const LEAD_ENDPOINT: string = import.meta.env.VITE_LEAD_ENDPOINT || '/api/lead'
+
+interface LeadResponse {
+  ok?: boolean
+  error?: string
+  errors?: Record<string, string>
+}
+
 /** «Успех» возвращается только после положительного ответа сервера. */
-export async function submitLead(input: LeadInput, fetchImpl: typeof fetch = fetch): Promise<SubmitResult> {
+export async function submitLead(
+  input: LeadInput,
+  fetchImpl: typeof fetch = fetch,
+  endpoint: string = LEAD_ENDPOINT,
+): Promise<SubmitResult> {
+  const external = /^https?:\/\//i.test(endpoint)
   try {
-    const res = await fetchImpl('/api/lead', {
+    const res = await fetchImpl(endpoint, {
       method: 'POST',
-      headers: { 'Content-Type': 'application/json' },
+      // Внешний адрес (Apps Script) не умеет в CORS-preflight: text/plain его не вызывает
+      headers: { 'Content-Type': external ? 'text/plain;charset=utf-8' : 'application/json' },
       body: JSON.stringify(input),
     })
-    let data: { ok?: boolean; errors?: Record<string, string> } | null = null
+    let data: LeadResponse | null = null
     try {
       data = await res.json()
     } catch {
       data = null
     }
+    // Apps Script всегда отвечает 200 и кладёт результат в тело, поэтому смотрим на оба признака
     if (res.ok && data?.ok === true) return { status: 'success' }
-    if (res.status === 400 && data?.errors) return { status: 'invalid', errors: data.errors }
-    if (res.status === 429) return { status: 'rate_limited' }
+    if (data?.errors && (res.status === 400 || data.error === 'validation')) {
+      return { status: 'invalid', errors: data.errors }
+    }
+    if (res.status === 429 || data?.error === 'rate_limited') return { status: 'rate_limited' }
     return { status: 'error' }
   } catch {
     return { status: 'error' }
